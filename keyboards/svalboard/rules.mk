@@ -8,7 +8,7 @@ SRC += matrix.c
 
 SERIAL_DRIVER = vendor
 PS2_MOUSE_ENABLE = yes
-MH_AUTO_BUTTONS = yes
+MH_AUTO_BUTTONS = no
 
 ifeq ($(strip $(MH_AUTO_BUTTONS)), yes)
   MOUSEKEY_ENABLE = yes
