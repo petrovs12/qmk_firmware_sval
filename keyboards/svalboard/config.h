@@ -57,12 +57,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define RP2040_BOOTLOADER_DOUBLE_TAP_RESET_TIMEOUT 500 // Timeout window in ms in which the double tap can occur.
  
 #define FORCE_NKRO
-
-
-
   //#define PS2_MOUSE_SCROLL_BTN_MASK (1<<PS2_MOUSE_BTN_MIDDLE) /* Default -- tap to enter relative scroll, hold to use direct scroll*/ 
- // #define PS2_MOUSE_SCROLL_BTN_MASK 0  // just normal middle button for panning and relative scroll
-  #define PS2_MOUSE_SCROLL_BTN_MASK ((1<<PS2_MOUSE_BTN_RIGHT) | (1<<PS2_MOUSE_BTN_LEFT))  //hold right click for direct scroll, use middle for relative scroll and pan
+  #define PS2_MOUSE_SCROLL_BTN_MASK 0  // just normal middle button for panning and relative scroll
+  //#define PS2_MOUSE_SCROLL_BTN_MASK ((1<<PS2_MOUSE_BTN_RIGHT) | (1<<PS2_MOUSE_BTN_LEFT))  //hold right click for direct scroll, use middle for relative scroll and pan
   #define PS2_MOUSE_SCROLL_DIVISOR_H 4
   #define PS2_MOUSE_SCROLL_DIVISOR_V 4
 
@@ -74,7 +71,3 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #endif
 
 //#define USB_POLLING_INTERVAL_MS 1
-
-
-
-
