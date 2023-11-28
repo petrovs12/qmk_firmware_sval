@@ -14,8 +14,7 @@
       "console": true,                                                                    
       "extrakey": true,                                                                   
       "fauxclicky": false,                                                                
-      "midi": false,                                                                      
-      "mousekey": true,                                                                   
+      "midi": false,                                                                                                                                        
       "nkro": true,                                                                       
       "rgblight": false,                                                                  
       "sleep_led": false,                                                                 
@@ -44,13 +43,7 @@
   },                                                                                      
   "tapping": {                                                                            
       "term": 200                                                                         
-  },
-  "ps2": {
-    "enabled": false,
-    "driver": "vendor",
-    "clock_pin": "GP24",
-    "data_pin": "GP23"
-   },                                                                                         
+  },                                                                                     
   "usb": {                                                                                
       "device_version": "0.0.2",                                                          
       "pid": "0x4044",                                                                    
