@@ -4,7 +4,7 @@ BOOTLOADER = rp2040
 BOARD = GENERIC_RP_RP2040
 
 CUSTOM_MATRIX = lite
-SRC += trackball/matrix.c
+SRC += matrix.c
 
 SERIAL_DRIVER = vendor
 # this turns on trackpoint:

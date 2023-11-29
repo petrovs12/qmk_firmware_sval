@@ -107,7 +107,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     #endif
     #define PMW33XX_CS_DIVISOR 4
     #define PMW33XX_CPI 3200
-    #define POINTING_DEVICE_INVERT_X_RIGHT
+    //#define POINTING_DEVICE_INVERT_X_RIGHT
     /* #define ROTATIONAL_TRANSFORM_ANGLE_RIGHT 75 */
   #endif
 #endif
