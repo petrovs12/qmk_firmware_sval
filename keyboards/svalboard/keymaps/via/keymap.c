@@ -54,7 +54,7 @@ const uint16_t PROGMEM keymaps[NUM_LAYERS][MATRIX_ROWS][MATRIX_COLS] = {
         /*L3*/ KC_S,            KC_W,           KC_B,           KC_X,           KC_ESC,
         /*L4*/ KC_A,            KC_Q,           KC_LBRC,        KC_Z,           KC_DEL,
 
-        /*Down                  Inner           Upper           Outer Upper     Outer Lower  Pushthrough*/
+        /*Down                  Inner           Upper           Outer Upper     Outer Lower  Pushthrough*/  
         /*RT*/ MO(NAS),         KC_SPACE,       TO(FUNC),       KC_BSPC,        KC_LALT,     TG(NAS),
         /*LT*/ KC_LSFT,         KC_ENTER,       KC_NORMAL_HOLD, KC_TAB,         KC_LCTL,     KC_CAPS
     ),
@@ -88,7 +88,7 @@ const uint16_t PROGMEM keymaps[NUM_LAYERS][MATRIX_ROWS][MATRIX_COLS] = {
         /*L3*/ KC_2,            KC_AT,          XXXXXXX,        KC_X,           KC_ESC,
         /*L4*/ KC_1,            KC_EXCLAIM,     KC_TILDE,       KC_EQUAL,       KC_DEL,
 
-        /*Down                  Inner           Upper           Outer Upper     Outer Lower  Pushthrough*/
+        /*Down                  Inner           Upper           Outer Upper     Outer Lower  Pushthrough*/  
         /*RT*/ MO(NAS),         KC_SPACE,       TO(FUNC),       KC_BSPC,      KC_LALT, _______,
         /*LT*/ KC_LSFT,       KC_ENTER,       KC_NORMAL_HOLD, KC_TAB,         KC_LCTL, _______
     ),
@@ -105,11 +105,27 @@ const uint16_t PROGMEM keymaps[NUM_LAYERS][MATRIX_ROWS][MATRIX_COLS] = {
         /*L3*/ XXXXXXX,         KC_F4,          XXXXXXX,        KC_F3,          KC_ESC,
         /*L4*/ XXXXXXX,         KC_F2,          XXXXXXX,        KC_F1,          KC_DEL,
 
-             /*Down                  Inner           Upper           Outer Upper     Outer Lower  Pushthrough*/
+             /*Down                  Inner           Upper           Outer Upper     Outer Lower  Pushthrough*/  
         /*RT*/ MO(NAS),         KC_SPACE,       TO(FUNC),       KC_BSPC,      KC_LALT, _______,
         /*LT*/ KC_LSFT,       KC_ENTER,       KC_NORMAL_HOLD, KC_TAB,         KC_LCTL,_______
     ),
 
+    [FUNC_HOLD] = LAYOUT(
+             /*Center           North           East            South           West*/
+        /*R1*/ KC_LEFT,         LCTL(KC_UP),   LCTL(KC_RIGHT), LCTL(KC_DOWN), LCTL(KC_LEFT),
+        /*R2*/ KC_UP,           KC_MS_U,        KC_MS_R,        KC_MS_D,        KC_MS_L,
+        /*R3*/ KC_DOWN,         KC_WH_U,        KC_WH_R,        KC_WH_D,        KC_WH_L,
+        /*R4*/ KC_RIGHT,        XXXXXXX,        XXXXXXX,        XXXXXXX,        XXXXXXX,
+
+        /*L1*/ XXXXXXX,         XXXXXXX,        XXXXXXX,        XXXXXXX,     XXXXXXX,
+        /*L2*/ XXXXXXX,         XXXXXXX,        XXXXXXX,        XXXXXXX,     XXXXXXX,
+        /*L3*/ XXXXXXX,         XXXXXXX,        XXXXXXX,        XXXXXXX,     XXXXXXX,
+        /*L4*/ _______,      _______,        _______,        _______,       _______,
+
+             /*Down                  Inner           Upper           Outer Upper     Outer Lower  Pushthrough*/  
+        /*RT*/ _______,         _______,        _______,        _______,        _______,_______,
+        /*LT*/ _______,         _______,        _______,        _______,        _______, _______
+    ),
 
 };
 
@@ -118,7 +134,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
       // If console is enabled, it will print the matrix position and status of each key pressed
 #ifdef CONSOLE_ENABLE
     uprintf("KL: kc: 0x%04X, col: %2u, row: %2u, pressed: %u, time: %5u, int: %u, count: %u\n", keycode, record->event.key.col, record->event.key.row, record->event.pressed, record->event.time, record->tap.interrupted, record->tap.count);
-#endif
+#endif 
   switch (keycode) {
 
      case KC_NORMAL_HOLD:

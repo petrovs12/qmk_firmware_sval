@@ -16,7 +16,7 @@
 
 #pragma once
 
-#define DYNAMIC_KEYMAP_LAYER_COUNT 7
+#define DYNAMIC_KEYMAP_LAYER_COUNT 100
 /* This is 4 by default. ProMicro's memory doesn't seem to be able to
  * support more than 7 dynamic keymap layers
  */
