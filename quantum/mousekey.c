@@ -23,6 +23,7 @@
 #include "print.h"
 #include "debug.h"
 #include "mousekey.h"
+#include "qmk_settings.h"
 
 static inline int8_t times_inv_sqrt2(int8_t x) {
     // 181/256 (0.70703125) is used as an approximation for 1/sqrt(2)
@@ -95,17 +96,17 @@ uint8_t mk_wheel_time_to_max = MOUSEKEY_WHEEL_TIME_TO_MAX;
 static uint8_t move_unit(void) {
     uint16_t unit;
     if (mousekey_accel & (1 << 0)) {
-        unit = (MOUSEKEY_MOVE_DELTA * mk_max_speed) / 4;
+        unit = (QS_mousekey_move_delta * mk_max_speed) / 4;
     } else if (mousekey_accel & (1 << 1)) {
-        unit = (MOUSEKEY_MOVE_DELTA * mk_max_speed) / 2;
+        unit = (QS_mousekey_move_delta * mk_max_speed) / 2;
     } else if (mousekey_accel & (1 << 2)) {
-        unit = (MOUSEKEY_MOVE_DELTA * mk_max_speed);
+        unit = (QS_mousekey_move_delta * mk_max_speed);
     } else if (mousekey_repeat == 0) {
-        unit = MOUSEKEY_MOVE_DELTA;
+        unit = QS_mousekey_move_delta;
     } else if (mousekey_repeat >= mk_time_to_max) {
-        unit = MOUSEKEY_MOVE_DELTA * mk_max_speed;
+        unit = QS_mousekey_move_delta * mk_max_speed;
     } else {
-        unit = (MOUSEKEY_MOVE_DELTA * mk_max_speed * mousekey_repeat) / mk_time_to_max;
+        unit = (QS_mousekey_move_delta * mk_max_speed * mousekey_repeat) / mk_time_to_max;
     }
     return (unit > MOUSEKEY_MOVE_MAX ? MOUSEKEY_MOVE_MAX : (unit == 0 ? 1 : unit));
 }
@@ -389,7 +390,20 @@ void mousekey_on(uint8_t code) {
     if (mouse_timer == 0) {
         mouse_timer = timer_read();
     }
-#    endif /* #ifdef MK_KINETIC_SPEED */
+#    endif
+
+#    ifndef MOUSEKEY_INERTIA
+    // If mouse report is not zero, the current mousekey press is overlapping
+    // with another. Restart acceleration for smoother directional transition.
+    if (mouse_report.x || mouse_report.y || mouse_report.h || mouse_report.v) {
+#        ifdef MK_KINETIC_SPEED
+        mouse_timer = timer_read() - (MOUSEKEY_INTERVAL << 2);
+#        else
+        mousekey_repeat       = MOUSEKEY_MOVE_DELTA;
+        mousekey_wheel_repeat = MOUSEKEY_WHEEL_DELTA;
+#        endif
+    }
+#    endif // ifndef MOUSEKEY_INERTIA
 
 #    ifdef MOUSEKEY_INERTIA
 

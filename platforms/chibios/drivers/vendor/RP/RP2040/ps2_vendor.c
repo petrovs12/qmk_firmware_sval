@@ -1,6 +1,7 @@
 // Copyright 2022 Marek Kraus (@gamelaster)
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "gpio.h"
 #include "hardware/pio.h"
 #include "hardware/clocks.h"
 #include "ps2.h"
@@ -10,18 +11,8 @@
 #    error PIO Driver is only available for Raspberry Pi 2040 MCUs!
 #endif
 
-#if defined(PS2_ENABLE)
-#    if defined(PS2_MOUSE_ENABLE)
-#        if !defined(PS2_MOUSE_USE_REMOTE_MODE)
-#            define BUFFERED_MODE_ENABLE
-#        endif
-#    else // PS2 Keyboard
-#        define BUFFERED_MODE_ENABLE
-#    endif
-#endif
-
 #if PS2_DATA_PIN + 1 != PS2_CLOCK_PIN
-#    error PS/2 Clock pin must be followed by data pin!
+#    error PS/2 clock pin must be data pin + 1!
 #endif
 
 static inline void pio_serve_interrupt(void);
@@ -239,8 +230,6 @@ uint8_t ps2_host_recv_response(void) {
     return ps2_get_data_from_frame(frame);
 }
 
-#ifdef BUFFERED_MODE_ENABLE
-
 bool pbuf_has_data(void) {
     osalSysLock();
     bool has_data = !ibqIsEmptyI(&pio_rx_queue);
@@ -265,5 +254,3 @@ uint8_t ps2_host_recv(void) {
 
     return frame != 0 ? ps2_get_data_from_frame(frame) : 0;
 }
-
-#endif

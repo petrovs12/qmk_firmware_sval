@@ -124,7 +124,7 @@ void matrix_init_custom(void) {
 }
 
 bool matrix_scan_custom(matrix_row_t current_matrix[]) {
-    
+
     matrix_row_t curr_matrix[ROWS_PER_HAND] = {0};
     // Set row, read cols
     for (uint8_t current_row = 0; current_row < (ROWS_PER_HAND); current_row++) {

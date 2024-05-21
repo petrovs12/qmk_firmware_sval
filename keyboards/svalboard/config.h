@@ -36,7 +36,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define DOUBLEDOWN_COL 5 // need a pullup on COL6
 
 #define SERIAL_DEBUG
-#define SERIAL_USART_TX_PIN GP0 
+#define SERIAL_USART_TX_PIN GP0
 #define RP2040_BOOTLOADER_DOUBLE_TAP_RESET
 #define RP2040_BOOTLOADER_DOUBLE_TAP_RESET_TIMEOUT 500 // Timeout window in ms in which the double tap can occur.
 

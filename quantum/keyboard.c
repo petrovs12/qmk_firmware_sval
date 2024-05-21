@@ -20,7 +20,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "keycode_config.h"
 #include "matrix.h"
 #include "keymap_introspection.h"
-#include "magic.h"
 #include "host.h"
 #include "led.h"
 #include "keycode.h"
@@ -33,6 +32,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "sendchar.h"
 #include "eeconfig.h"
 #include "action_layer.h"
+#ifdef BOOTMAGIC_ENABLE
+#    include "bootmagic.h"
+#endif
 #ifdef AUDIO_ENABLE
 #    include "audio.h"
 #endif
@@ -44,9 +46,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #endif
 #ifdef MOUSEKEY_ENABLE
 #    include "mousekey.h"
-#endif
-#ifdef PS2_MOUSE_ENABLE
-#    include "ps2_mouse.h"
 #endif
 #ifdef RGBLIGHT_ENABLE
 #    include "rgblight.h"
@@ -99,9 +98,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifdef ST7565_ENABLE
 #    include "st7565.h"
 #endif
-#ifdef VELOCIKEY_ENABLE
-#    include "velocikey.h"
-#endif
 #ifdef VIA_ENABLE
 #    include "via.h"
 #endif
@@ -110,6 +106,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #endif
 #ifdef EEPROM_DRIVER
 #    include "eeprom_driver.h"
+#endif
+#ifdef QMK_SETTINGS
+#   include "qmk_settings.h"
+#endif
+#ifdef VIAL_ENABLE
+#   include "vial.h"
 #endif
 #if defined(CRC_ENABLE)
 #    include "crc.h"
@@ -137,6 +139,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #endif
 #ifdef WPM_ENABLE
 #    include "wpm.h"
+#endif
+#ifdef OS_DETECTION_ENABLE
+#    include "os_detection.h"
 #endif
 
 static uint32_t last_input_modification_time = 0;
@@ -317,6 +322,12 @@ void keyboard_setup(void) {
 #ifdef EEPROM_DRIVER
     eeprom_driver_init();
 #endif
+#ifdef VIAL_ENABLE
+    vial_init();
+#endif
+#ifdef QMK_SETTINGS
+    qmk_settings_init();
+#endif
     matrix_setup();
     keyboard_pre_init_kb();
 }
@@ -373,31 +384,30 @@ void housekeeping_task(void) {
     housekeeping_task_user();
 }
 
-/** \brief Init tasks previously located in matrix_init_quantum
+/** \brief quantum_init
  *
- * TODO: rationalise against keyboard_init and current split role
+ * Init global state
  */
 void quantum_init(void) {
-    magic();
-    led_init_ports();
-#ifdef BACKLIGHT_ENABLE
-    backlight_init_ports();
+    /* check signature */
+    if (!eeconfig_is_enabled()) {
+        eeconfig_init();
+    }
+
+    /* init globals */
+    debug_config.raw  = eeconfig_read_debug();
+    keymap_config.raw = eeconfig_read_keymap();
+
+#ifdef BOOTMAGIC_ENABLE
+    bootmagic();
 #endif
-#ifdef AUDIO_ENABLE
-    audio_init();
-#endif
-#ifdef LED_MATRIX_ENABLE
-    led_matrix_init();
-#endif
-#ifdef RGB_MATRIX_ENABLE
-    rgb_matrix_init();
-#endif
-#if defined(UNICODE_COMMON_ENABLE)
-    unicode_input_mode_init();
-#endif
-#ifdef HAPTIC_ENABLE
-    haptic_init();
-#endif
+
+    /* read here just incase bootmagic process changed its value */
+    layer_state_t default_layer = (layer_state_t)eeconfig_read_default_layer();
+    default_layer_set(default_layer);
+
+    /* Also initialize layer state to trigger callback functions for layer_state */
+    layer_state_set_kb((layer_state_t)layer_state);
 }
 
 /** \brief keyboard_init
@@ -418,6 +428,22 @@ void keyboard_init(void) {
 #endif
     matrix_init();
     quantum_init();
+    led_init_ports();
+#ifdef BACKLIGHT_ENABLE
+    backlight_init_ports();
+#endif
+#ifdef AUDIO_ENABLE
+    audio_init();
+#endif
+#ifdef LED_MATRIX_ENABLE
+    led_matrix_init();
+#endif
+#ifdef RGB_MATRIX_ENABLE
+    rgb_matrix_init();
+#endif
+#if defined(UNICODE_COMMON_ENABLE)
+    unicode_input_mode_init();
+#endif
 #if defined(CRC_ENABLE)
     crc_init();
 #endif
@@ -426,9 +452,6 @@ void keyboard_init(void) {
 #endif
 #ifdef ST7565_ENABLE
     st7565_init(DISPLAY_ROTATION_0);
-#endif
-#ifdef PS2_MOUSE_ENABLE
-    ps2_mouse_init();
 #endif
 #ifdef BACKLIGHT_ENABLE
     backlight_init();
@@ -446,6 +469,9 @@ void keyboard_init(void) {
 #ifdef DIP_SWITCH_ENABLE
     dip_switch_init();
 #endif
+#ifdef JOYSTICK_ENABLE
+    joystick_init();
+#endif
 #ifdef SLEEP_LED_ENABLE
     sleep_led_init();
 #endif
@@ -461,6 +487,9 @@ void keyboard_init(void) {
 #endif
 #ifdef BLUETOOTH_ENABLE
     bluetooth_init();
+#endif
+#ifdef HAPTIC_ENABLE
+    haptic_init();
 #endif
 
 #if defined(DEBUG_MATRIX_SCAN_RATE) && defined(CONSOLE_ENABLE)
@@ -617,12 +646,8 @@ void quantum_task(void) {
     decay_wpm();
 #endif
 
-#ifdef HAPTIC_ENABLE
-    haptic_task();
-#endif
-
 #ifdef DIP_SWITCH_ENABLE
-    dip_switch_read(false);
+    dip_switch_task();
 #endif
 
 #ifdef AUTO_SHIFT_ENABLE
@@ -670,7 +695,7 @@ void keyboard_task(void) {
 #endif
 
 #ifdef ENCODER_ENABLE
-    if (encoder_read()) {
+    if (encoder_task()) {
         last_encoder_activity_trigger();
         activity_has_occurred = true;
     }
@@ -704,18 +729,8 @@ void keyboard_task(void) {
     mousekey_task();
 #endif
 
-#ifdef PS2_MOUSE_ENABLE
-    ps2_mouse_task();
-#endif
-
 #ifdef MIDI_ENABLE
     midi_task();
-#endif
-
-#ifdef VELOCIKEY_ENABLE
-    if (velocikey_enabled()) {
-        velocikey_decelerate();
-    }
 #endif
 
 #ifdef JOYSTICK_ENABLE
@@ -726,5 +741,13 @@ void keyboard_task(void) {
     bluetooth_task();
 #endif
 
+#ifdef HAPTIC_ENABLE
+    haptic_task();
+#endif
+
     led_task();
+
+#ifdef OS_DETECTION_ENABLE
+    os_detection_task();
+#endif
 }

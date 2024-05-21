@@ -39,6 +39,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #    include "analog.h"
 #    include "drivers/sensors/analog_joystick.h"
 #    define POINTING_DEVICE_MOTION_PIN_ACTIVE_LOW
+#elif defined(POINTING_DEVICE_DRIVER_azoteq_iqs5xx)
+#    include "i2c_master.h"
+#    include "drivers/sensors/azoteq_iqs5xx.h"
 #elif defined(POINTING_DEVICE_DRIVER_cirque_pinnacle_i2c) || defined(POINTING_DEVICE_DRIVER_cirque_pinnacle_spi)
 #    include "drivers/sensors/cirque_pinnacle.h"
 #    include "drivers/sensors/cirque_pinnacle_gestures.h"
@@ -64,6 +67,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #    include "spi_master.h"
 #    include "drivers/sensors/pmw33xx_common.h"
 #    define POINTING_DEVICE_MOTION_PIN_ACTIVE_LOW
+#elif defined(POINTING_DEVICE_DRIVER_ps2_mouse)
+#    include "drivers/ps2/ps2_mouse.h"
 #else
 void           pointing_device_driver_init(void);
 report_mouse_t pointing_device_driver_get_report(report_mouse_t mouse_report);

@@ -15,6 +15,7 @@
  */
 
 #include "quantum.h"
+#include "qmk_settings.h"
 
 #if defined(BACKLIGHT_ENABLE) || defined(LED_MATRIX_ENABLE)
 #    include "process_backlight.h"
@@ -40,7 +41,7 @@
 #    include "process_leader.h"
 #endif
 
-#ifdef MAGIC_KEYCODE_ENABLE
+#ifdef MAGIC_ENABLE
 #    include "process_magic.h"
 #endif
 
@@ -68,8 +69,8 @@
 #    include "process_unicode_common.h"
 #endif
 
-#ifdef VELOCIKEY_ENABLE
-#    include "velocikey.h"
+#ifdef VIAL_ENABLE
+#    include "vial.h"
 #endif
 
 #ifdef AUDIO_ENABLE
@@ -147,7 +148,7 @@ __attribute__((weak)) void tap_code16_delay(uint16_t code, uint16_t delay) {
  * \param code The modded keycode to tap. If `code` is `KC_CAPS_LOCK`, the delay will be `TAP_HOLD_CAPS_DELAY`, otherwise `TAP_CODE_DELAY`, if defined.
  */
 __attribute__((weak)) void tap_code16(uint16_t code) {
-    tap_code16_delay(code, code == KC_CAPS_LOCK ? TAP_HOLD_CAPS_DELAY : TAP_CODE_DELAY);
+    tap_code16_delay(code, code == KC_CAPS_LOCK ? QS_tap_hold_caps_delay : QS_tap_code_delay);
 }
 
 __attribute__((weak)) bool pre_process_record_kb(uint16_t keycode, keyrecord_t *record) {
@@ -176,7 +177,7 @@ __attribute__((weak)) void post_process_record_kb(uint16_t keycode, keyrecord_t 
 
 __attribute__((weak)) void post_process_record_user(uint16_t keycode, keyrecord_t *record) {}
 
-void shutdown_quantum(void) {
+void shutdown_quantum(bool jump_to_bootloader) {
     clear_keyboard();
 #if defined(MIDI_ENABLE) && defined(MIDI_BASIC)
     process_midi_all_notes_off();
@@ -187,12 +188,12 @@ void shutdown_quantum(void) {
 #    endif
     uint16_t timer_start = timer_read();
     PLAY_SONG(goodbye_song);
-    shutdown_user();
+    shutdown_kb(jump_to_bootloader);
     while (timer_elapsed(timer_start) < 250)
         wait_ms(1);
     stop_all_notes();
 #else
-    shutdown_user();
+    shutdown_kb(jump_to_bootloader);
     wait_ms(250);
 #endif
 #ifdef HAPTIC_ENABLE
@@ -201,12 +202,12 @@ void shutdown_quantum(void) {
 }
 
 void reset_keyboard(void) {
-    shutdown_quantum();
+    shutdown_quantum(true);
     bootloader_jump();
 }
 
 void soft_reset_keyboard(void) {
-    shutdown_quantum();
+    shutdown_quantum(false);
     mcu_reset();
 }
 
@@ -260,12 +261,14 @@ void post_process_record_quantum(keyrecord_t *record) {
     post_process_record_kb(keycode, record);
 }
 
+bool process_record_quantum(keyrecord_t *record) {
+    uint16_t keycode = get_record_keycode(record, true);
+    return process_record_quantum_helper(keycode, record);
+}
 /* Core keycode function, hands off handling to other functions,
     then processes internal quantum keycodes, and then processes
     ACTIONs.                                                      */
-bool process_record_quantum(keyrecord_t *record) {
-    uint16_t keycode = get_record_keycode(record, true);
-
+bool process_record_quantum_helper(uint16_t keycode, keyrecord_t *record) {
     // This is how you use actions here
     // if (keycode == QK_LEADER) {
     //   action_t action;
@@ -288,9 +291,9 @@ bool process_record_quantum(keyrecord_t *record) {
     }
 #endif
 
-#ifdef VELOCIKEY_ENABLE
-    if (velocikey_enabled() && record->event.pressed) {
-        velocikey_accelerate();
+#ifdef RGBLIGHT_ENABLE
+    if (record->event.pressed) {
+        preprocess_rgblight();
     }
 #endif
 
@@ -320,6 +323,9 @@ bool process_record_quantum(keyrecord_t *record) {
 #endif
 #if defined(VIA_ENABLE)
             process_record_via(keycode, record) &&
+#endif
+#if defined(VIAL_ENABLE)
+            process_record_vial(keycode, record) &&
 #endif
 #if defined(POINTING_DEVICE_ENABLE) && defined(POINTING_DEVICE_AUTO_MOUSE_ENABLE)
             process_auto_mouse(keycode, record) &&
@@ -370,7 +376,7 @@ bool process_record_quantum(keyrecord_t *record) {
 #ifdef SPACE_CADET_ENABLE
             process_space_cadet(keycode, record) &&
 #endif
-#ifdef MAGIC_KEYCODE_ENABLE
+#ifdef MAGIC_ENABLE
             process_magic(keycode, record) &&
 #endif
 #ifdef GRAVE_ESC_ENABLE
@@ -495,9 +501,16 @@ void set_single_persistent_default_layer(uint8_t default_layer) {
 // Override these functions in your keymap file to play different tunes on
 // different events such as startup and bootloader jump
 
-__attribute__((weak)) void startup_user(void) {}
+__attribute__((weak)) bool shutdown_user(bool jump_to_bootloader) {
+    return true;
+}
 
-__attribute__((weak)) void shutdown_user(void) {}
+__attribute__((weak)) bool shutdown_kb(bool jump_to_bootloader) {
+    if (!shutdown_user(jump_to_bootloader)) {
+        return false;
+    }
+    return true;
+}
 
 void suspend_power_down_quantum(void) {
     suspend_power_down_kb();

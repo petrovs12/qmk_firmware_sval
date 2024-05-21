@@ -1,0 +1,24 @@
+name: Release QMK Firmware
+
+on:
+  push:
+    tags:
+      - 'v*'
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+
+permissions: write-all
+
+jobs:
+  build:
+    uses: ./.github/workflows/build-firmware.yml
+    with:
+      keyboard: ${{ matrix.keyboard }}
+      keymap: ${{ matrix.keymap }}
+      side: ${{ matrix.side }}
+    strategy:
+      matrix:
+        keyboard: [ svalboard/trackpoint, svalboard, svalboard/trackball ]
+        keymap: [ vial ]
+        side: [ left, right ]

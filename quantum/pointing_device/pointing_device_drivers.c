@@ -42,7 +42,7 @@ report_mouse_t adns5050_get_report(report_mouse_t mouse_report) {
 }
 
 // clang-format off
-const pointing_device_driver_t pointing_device_driver = {
+const pointing_device_driver_t real_device_driver = {
     .init         = adns5050_init,
     .get_report   = adns5050_get_report,
     .set_cpi      = adns5050_set_cpi,
@@ -64,7 +64,7 @@ report_mouse_t pmw3320_get_report(report_mouse_t mouse_report) {
 }
 
 // clang-format off
-const pointing_device_driver_t pointing_device_driver = {
+const pointing_device_driver_t real_device_driver = {
     .init         = pmw3320_init,
     .get_report   = pmw3320_get_report,
     .set_cpi      = pmw3320_set_cpi,
@@ -84,7 +84,7 @@ report_mouse_t adns9800_get_report_driver(report_mouse_t mouse_report) {
 }
 
 // clang-format off
-const pointing_device_driver_t pointing_device_driver = {
+const pointing_device_driver_t real_device_driver = {
     .init       = adns9800_init,
     .get_report = adns9800_get_report_driver,
     .set_cpi    = adns9800_set_cpi,
@@ -107,11 +107,124 @@ report_mouse_t analog_joystick_get_report(report_mouse_t mouse_report) {
 }
 
 // clang-format off
-const pointing_device_driver_t pointing_device_driver = {
+const pointing_device_driver_t real_device_driver = {
     .init       = analog_joystick_init,
     .get_report = analog_joystick_get_report,
     .set_cpi    = NULL,
     .get_cpi    = NULL
+};
+// clang-format on
+
+#elif defined(POINTING_DEVICE_DRIVER_azoteq_iqs5xx)
+
+static i2c_status_t azoteq_iqs5xx_init_status = 1;
+
+void azoteq_iqs5xx_init(void) {
+    i2c_init();
+    azoteq_iqs5xx_wake();
+    azoteq_iqs5xx_reset_suspend(true, false, true);
+    wait_ms(100);
+    azoteq_iqs5xx_wake();
+    if (azoteq_iqs5xx_get_product() != AZOTEQ_IQS5XX_UNKNOWN) {
+        azoteq_iqs5xx_setup_resolution();
+        azoteq_iqs5xx_init_status = azoteq_iqs5xx_set_report_rate(AZOTEQ_IQS5XX_REPORT_RATE, AZOTEQ_IQS5XX_ACTIVE, false);
+        azoteq_iqs5xx_init_status |= azoteq_iqs5xx_set_event_mode(false, false);
+        azoteq_iqs5xx_init_status |= azoteq_iqs5xx_set_reati(true, false);
+#    if defined(AZOTEQ_IQS5XX_ROTATION_90)
+        azoteq_iqs5xx_init_status |= azoteq_iqs5xx_set_xy_config(false, true, true, true, false);
+#    elif defined(AZOTEQ_IQS5XX_ROTATION_180)
+        azoteq_iqs5xx_init_status |= azoteq_iqs5xx_set_xy_config(true, true, false, true, false);
+#    elif defined(AZOTEQ_IQS5XX_ROTATION_270)
+        azoteq_iqs5xx_init_status |= azoteq_iqs5xx_set_xy_config(true, false, true, true, false);
+#    else
+        azoteq_iqs5xx_init_status |= azoteq_iqs5xx_set_xy_config(false, false, false, true, false);
+#    endif
+        azoteq_iqs5xx_init_status |= azoteq_iqs5xx_set_gesture_config(true);
+        wait_ms(AZOTEQ_IQS5XX_REPORT_RATE + 1);
+    }
+};
+
+report_mouse_t azoteq_iqs5xx_get_report(report_mouse_t mouse_report) {
+    report_mouse_t temp_report           = {0};
+    static uint8_t previous_button_state = 0;
+    static uint8_t read_error_count      = 0;
+
+    if (azoteq_iqs5xx_init_status == I2C_STATUS_SUCCESS) {
+        azoteq_iqs5xx_base_data_t base_data = {0};
+#    if !defined(POINTING_DEVICE_MOTION_PIN)
+        azoteq_iqs5xx_wake();
+#    endif
+        i2c_status_t status          = azoteq_iqs5xx_get_base_data(&base_data);
+        bool         ignore_movement = false;
+
+        if (status == I2C_STATUS_SUCCESS) {
+            // pd_dprintf("IQS5XX - previous cycle time: %d \n", base_data.previous_cycle_time);
+            read_error_count = 0;
+            if (base_data.gesture_events_0.single_tap || base_data.gesture_events_0.press_and_hold) {
+                pd_dprintf("IQS5XX - Single tap/hold.\n");
+                temp_report.buttons = pointing_device_handle_buttons(temp_report.buttons, true, POINTING_DEVICE_BUTTON1);
+            } else if (base_data.gesture_events_1.two_finger_tap) {
+                pd_dprintf("IQS5XX - Two finger tap.\n");
+                temp_report.buttons = pointing_device_handle_buttons(temp_report.buttons, true, POINTING_DEVICE_BUTTON2);
+            } else if (base_data.gesture_events_0.swipe_x_neg) {
+                pd_dprintf("IQS5XX - X-.\n");
+                temp_report.buttons = pointing_device_handle_buttons(temp_report.buttons, true, POINTING_DEVICE_BUTTON4);
+                ignore_movement     = true;
+            } else if (base_data.gesture_events_0.swipe_x_pos) {
+                pd_dprintf("IQS5XX - X+.\n");
+                temp_report.buttons = pointing_device_handle_buttons(temp_report.buttons, true, POINTING_DEVICE_BUTTON5);
+                ignore_movement     = true;
+            } else if (base_data.gesture_events_0.swipe_y_neg) {
+                pd_dprintf("IQS5XX - Y-.\n");
+                temp_report.buttons = pointing_device_handle_buttons(temp_report.buttons, true, POINTING_DEVICE_BUTTON6);
+                ignore_movement     = true;
+            } else if (base_data.gesture_events_0.swipe_y_pos) {
+                pd_dprintf("IQS5XX - Y+.\n");
+                temp_report.buttons = pointing_device_handle_buttons(temp_report.buttons, true, POINTING_DEVICE_BUTTON3);
+                ignore_movement     = true;
+            } else if (base_data.gesture_events_1.zoom) {
+                if (AZOTEQ_IQS5XX_COMBINE_H_L_BYTES(base_data.x.h, base_data.x.l) < 0) {
+                    pd_dprintf("IQS5XX - Zoom out.\n");
+                    temp_report.buttons = pointing_device_handle_buttons(temp_report.buttons, true, POINTING_DEVICE_BUTTON7);
+                } else if (AZOTEQ_IQS5XX_COMBINE_H_L_BYTES(base_data.x.h, base_data.x.l) > 0) {
+                    pd_dprintf("IQS5XX - Zoom in.\n");
+                    temp_report.buttons = pointing_device_handle_buttons(temp_report.buttons, true, POINTING_DEVICE_BUTTON8);
+                }
+            } else if (base_data.gesture_events_1.scroll) {
+                pd_dprintf("IQS5XX - Scroll.\n");
+                temp_report.h = CONSTRAIN_HID(AZOTEQ_IQS5XX_COMBINE_H_L_BYTES(base_data.x.h, base_data.x.l));
+                temp_report.v = CONSTRAIN_HID(AZOTEQ_IQS5XX_COMBINE_H_L_BYTES(base_data.y.h, base_data.y.l));
+            }
+            if (base_data.number_of_fingers == 1 && !ignore_movement) {
+                temp_report.x = CONSTRAIN_HID_XY(AZOTEQ_IQS5XX_COMBINE_H_L_BYTES(base_data.x.h, base_data.x.l));
+                temp_report.y = CONSTRAIN_HID_XY(AZOTEQ_IQS5XX_COMBINE_H_L_BYTES(base_data.y.h, base_data.y.l));
+            }
+
+            previous_button_state = temp_report.buttons;
+
+        } else {
+            if (read_error_count > 10) {
+                read_error_count      = 0;
+                previous_button_state = 0;
+            } else {
+                read_error_count++;
+            }
+            temp_report.buttons = previous_button_state;
+            pd_dprintf("IQS5XX - get report failed: %d \n", status);
+        }
+    } else {
+        pd_dprintf("IQS5XX - Init failed: %d \n", azoteq_iqs5xx_init_status);
+    }
+
+    return temp_report;
+}
+
+// clang-format off
+const pointing_device_driver_t real_device_driver = {
+    .init       = azoteq_iqs5xx_init,
+    .get_report = azoteq_iqs5xx_get_report,
+    .set_cpi    = azoteq_iqs5xx_set_cpi,
+    .get_cpi    = azoteq_iqs5xx_get_cpi
 };
 // clang-format on
 
@@ -224,7 +337,7 @@ void cirque_pinnacle_set_cpi(uint16_t cpi) {
 }
 
 // clang-format off
-const pointing_device_driver_t pointing_device_driver = {
+const pointing_device_driver_t real_device_driver = {
     .init       = cirque_pinnacle_init,
     .get_report = cirque_pinnacle_get_report,
     .set_cpi    = cirque_pinnacle_set_cpi,
@@ -248,7 +361,7 @@ report_mouse_t cirque_pinnacle_get_report(report_mouse_t mouse_report) {
 }
 
 // clang-format off
-const pointing_device_driver_t pointing_device_driver = {
+const pointing_device_driver_t real_device_driver = {
     .init       = cirque_pinnacle_init,
     .get_report = cirque_pinnacle_get_report,
     .set_cpi    = cirque_pinnacle_set_scale,
@@ -270,7 +383,7 @@ report_mouse_t paw3204_get_report(report_mouse_t mouse_report) {
 
     return mouse_report;
 }
-const pointing_device_driver_t pointing_device_driver = {
+const pointing_device_driver_t real_device_driver = {
     .init       = paw3204_init,
     .get_report = paw3204_get_report,
     .set_cpi    = paw3204_set_cpi,
@@ -326,7 +439,7 @@ report_mouse_t pimoroni_trackball_get_report(report_mouse_t mouse_report) {
 }
 
 // clang-format off
-const pointing_device_driver_t pointing_device_driver = {
+const pointing_device_driver_t real_device_driver = {
     .init       = pimoroni_trackball_device_init,
     .get_report = pimoroni_trackball_get_report,
     .set_cpi    = pimoroni_trackball_set_cpi,
@@ -371,7 +484,7 @@ report_mouse_t pmw33xx_get_report(report_mouse_t mouse_report) {
 }
 
 // clang-format off
-const pointing_device_driver_t pointing_device_driver = {
+const pointing_device_driver_t real_device_driver = {
     .init       = pmw33xx_init_wrapper,
     .get_report = pmw33xx_get_report,
     .set_cpi    = pmw33xx_set_cpi_wrapper,
@@ -379,15 +492,49 @@ const pointing_device_driver_t pointing_device_driver = {
 };
 // clang-format on
 
+#elif defined(POINTING_DEVICE_DRIVER_ps2_mouse)
+// clang-format off
+const pointing_device_driver_t real_device_driver = {
+    .init         = ps2_mouse_init,
+    .get_report   = ps2_mouse_get_report,
+    .set_cpi      = ps2_mouse_set_cpi,
+    .get_cpi      = ps2_mouse_get_cpi,
+};
+// clang-format on
+
 #else
-__attribute__((weak)) void           pointing_device_driver_init(void) {}
-__attribute__((weak)) report_mouse_t pointing_device_driver_get_report(report_mouse_t mouse_report) {
+__attribute__((weak)) void           fake_pointer_init(void) {}
+__attribute__((weak)) report_mouse_t fake_pointer_get_report(report_mouse_t mouse_report) {
     return mouse_report;
 }
-__attribute__((weak)) uint16_t pointing_device_driver_get_cpi(void) {
+__attribute__((weak)) uint16_t fake_pointer_get_cpi(void) {
     return 0;
 }
-__attribute__((weak)) void pointing_device_driver_set_cpi(uint16_t cpi) {}
+__attribute__((weak)) void fake_pointer_set_cpi(uint16_t cpi) {}
+
+// clang-format off
+const pointing_device_driver_t real_device_driver = {
+    .init       = fake_pointer_init,
+    .get_report = fake_pointer_get_report,
+    .get_cpi    = fake_pointer_get_cpi,
+    .set_cpi    = fake_pointer_set_cpi
+};
+// clang-format on
+
+#endif
+
+__attribute__((weak)) void           pointing_device_driver_init(void) {
+    real_device_driver.init();
+}
+__attribute__((weak)) report_mouse_t pointing_device_driver_get_report(report_mouse_t mouse_report) {
+    return real_device_driver.get_report(mouse_report);
+}
+__attribute__((weak)) uint16_t pointing_device_driver_get_cpi(void) {
+    return real_device_driver.get_cpi();
+}
+__attribute__((weak)) void pointing_device_driver_set_cpi(uint16_t cpi) {
+    real_device_driver.set_cpi(cpi);
+}
 
 // clang-format off
 const pointing_device_driver_t pointing_device_driver = {
@@ -398,4 +545,3 @@ const pointing_device_driver_t pointing_device_driver = {
 };
 // clang-format on
 
-#endif
