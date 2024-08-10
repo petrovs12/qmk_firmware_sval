@@ -17,12 +17,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
+// This is used by our user's keymaps for conditionals.
+#define SVALBOARD
+
+//#define FORTY_FOUR_MM_TB
 /* key matrix size */
 // Rows are doubled-up
 #define MATRIX_ROWS  10
 #define MATRIX_COLS  6
-
+#define PFET_ROWS
+#define FORCE_NKRO
+#define EE_HANDS
 //#define DEBUG_MATRIX_SCAN_RATE
+#define EECONFIG_KB_DATA_SIZE 4
 
 // wiring of each half
 //Layout for svalboard v0 (different from lalboard_v2)
@@ -31,55 +38,39 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //Both Thumbs (these are same as lalboard_v2)
 //OL OU D IL MODE DOUBLE
 //Knuckle Nail Down Pad Up Double
+//#define THUMB_DOWN_ACTIVE_DARK
 
 #define MATRIX_COL_PUSHED_STATES { 0, 0, 1, 0, 0, 0 }
 #define DOUBLEDOWN_COL 5 // need a pullup on COL6
+#define PREWAIT_US 90
+#define POSTWAIT_US 90
 
 #define SERIAL_DEBUG
-#define SERIAL_USART_TX_PIN GP0
 #define RP2040_BOOTLOADER_DOUBLE_TAP_RESET
 #define RP2040_BOOTLOADER_DOUBLE_TAP_RESET_TIMEOUT 500 // Timeout window in ms in which the double tap can occur.
 
-#if defined(POINTING_DEVICE_ENABLE)
+#define DYNAMIC_KEYMAP_LAYER_COUNT 16
+#define VIAL_TAP_DANCE_ENTRIES 50
+#define VIAL_TAP_COMBO_ENTRIES 50
+#define VIAL_COMBO_ENTRIES 50
+#define VIAL_KEY_OVERRIDE_ENTRIES 10
+#define DYNAMIC_KEYMAP_MACRO_COUNT 50
+#define AUTO_SHIFT_TIMEOUT 250
+#define AUTO_SHIFT
 
-// Pointing device stuff
+#define USB_MAX_POWER_CONSUMPTION 500
+#define USB_SUSPEND_WAKEUP_DELAY 500
+#define SELECT_SOFT_SERIAL_RATE {0}
+
+#define MOUSE_EXTENDED_REPORT
 #define SPLIT_POINTING_ENABLE
 #define POINTING_DEVICE_COMBINED
+#define POINTING_DEVICE_AUTO_MOUSE_MH_ENABLE
 
-#if defined(POINTING_DEVICE_IS_PIMORONI)
-
-#define I2C_DRIVER I2CD1
-#define I2C1_SDA_PIN GP18
-#define I2C1_SCL_PIN GP19
-#define PIMORONI_TRACKBALL_SCALE 5
-
-#endif
-
-#if (defined(POINTING_DEVICE_IS_PMW3360) || defined(POINTING_DEVICE_IS_PMW3389))
-
-// SPI stuff
-#define SPI_DRIVER SPID0
-// Use SCK# pin from SPI set.
-#define SPI_SCK_PIN GP18
-// Use TX# pin from SPI set.
-#define SPI_MOSI_PIN GP19
-// Use RX# pin from SPI set.
-#define SPI_MISO_PIN GP16
-// PMW33XX stuff
-// Use CS# pin from SPI set. Might not actually have to be the CS# pin, since
-// there's supposed to be support for multiple PMW33XX sensors, with different
-// CS pins.
-#define PMW33XX_CS_PIN GP17
-#define PMW33XX_CS_DIVISOR 4
-#define PMW33XX_CPI 3200
-#define POINTING_DEVICE_INVERT_X_RIGHT
-/* #define ROTATIONAL_TRANSFORM_ANGLE_RIGHT 75 */
-
-#endif
-#endif
-
-//#define USB_POLLING_INTERVAL_MS 1
-
-
-
+// Avoid slave-slave deadlock due to missing USB_VBUS_PIN.
+//
+// End result of enabling this: when you plug the keyboard to a finnicky USB
+// hub, KVM, or a machine that boots slowly (ECC RAM), the keyboard no longer
+// needs to be reset to come to life.
+#define SPLIT_WATCHDOG_ENABLE
 
