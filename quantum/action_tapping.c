@@ -120,7 +120,7 @@ void action_tapping_process(keyrecord_t record) {
 
 #    if defined(AUTO_SHIFT_ENABLE) && defined(RETRO_SHIFT)
 #        ifdef RETRO_TAPPING_PER_KEY
-#            define TAP_GET_RETRO_TAPPING(keyp) get_auto_shifted_key(tapping_keycode, keyp) && get_retro_tapping(tapping_keycode, &tapping_key)
+#            define TAP_GET_RETRO_TAPPING(keyp) (get_auto_shifted_key(tapping_keycode, keyp) && get_retro_tapping(tapping_keycode, &tapping_key))
 #        else
 #            define TAP_GET_RETRO_TAPPING(keyp) get_auto_shifted_key(tapping_keycode, keyp)
 #        endif
@@ -218,14 +218,14 @@ bool process_tapping(keyrecord_t *keyp) {
                  */
                 // clang-format off
                 else if (
-                    !event.pressed && waiting_buffer_typed(event) &&
+                    (!event.pressed && waiting_buffer_typed(event) &&
                     (
                         TAP_GET_PERMISSIVE_HOLD ||
                         // Causes nested taps to not wait past TAPPING_TERM/RETRO_SHIFT
                         // unnecessarily and fixes them for Layer Taps.
                         TAP_GET_RETRO_TAPPING(keyp)
                     )
-                ) {
+                )) {
                     // clang-format on
                     ac_dprintf("Tapping: End. No tap. Interfered by typing key\n");
                     process_record(&tapping_key);
